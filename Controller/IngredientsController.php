@@ -23,7 +23,7 @@ class IngredientsController extends AppController {
         parent::beforeFilter();
         $this->Auth->deny(); // Deny ALL, user must be logged in.
         
-        $this->filterConditions = array('Ingredient.user_id' => $this->Auth->user('id'));
+        // $this->filterConditions = array('Ingredient.user_id' => $this->Auth->user('id'));
     }
     
     public function isAuthorized($user) {
