@@ -85,6 +85,7 @@ class RecipesController extends AppController {
         if (!$this->Recipe->exists($id)) {
                 throw new NotFoundException(__('Invalid recipe'));
         }
+        $user = $this->Auth->user();
         $this->Recipe->Behaviors->load('Containable');
         $options = array('conditions' => array('Recipe.' . $this->Recipe->primaryKey => $id), 
                 'contain' => array(
@@ -136,7 +137,16 @@ class RecipesController extends AppController {
                     'Image',
                     'Review'
                 ));
-        $this->set('recipe', $this->Recipe->find('first', $options));
+        
+        $recipe = $this->Recipe->find('first', $options);
+        
+        // Keep Private recipes Private
+        if (!$this->User->isEditor($user) && $recipe['Recipe']['private'] == 'true' && $recipe['User']['id'] != $this->Auth->user('id')) {
+            throw new UnauthorizedException(__('Recipe is private and you are not the owner.'));
+        }
+           
+        // return the view vars      
+        $this->set('recipe', $recipe);
         $this->set('servings', $servings);
     }
 
@@ -149,8 +159,8 @@ class RecipesController extends AppController {
             //TODO: Keep the original author just in case editor/admin edits
             $recipe['Recipe']['user_id'] = $this->Auth->user('id');
             if ($this->Recipe->saveWithAttachments($recipe)) {
-                $recipe = $this->loadRecipe($id);
                 $this->Session->setFlash(__('The recipe has been saved.'), "success");
+                return $this->redirect(array('action' => 'index'));
             } else {
                 $this->Session->setFlash(__('The recipe could not be saved. Please, try again.'));
             }
